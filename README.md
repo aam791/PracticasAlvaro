@@ -26,6 +26,8 @@
 
 **Informes**
 
+-DataCamera: Archivos .csv y python.
+
 -Informe de fallo: Ver el efecto que tienen errores de la cámara de refrigeración 1 en la temperatura de los depósitos PCM.
 
 -Comparación entre cámara de refrigeración 1 y 2 entre abril y mayo.
