@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- Cargar datos ---
+df = pd.read_csv(
+    'archivos_unidos_por_fecha.csv',
+    delimiter=';',
+    dtype=str,
+    encoding='latin1',
+    header=0
+)
+
+# --- Convertir fechas ---
+fechas_str = df.iloc[:, 0]
+fechas = pd.to_datetime(fechas_str, format='%Y-%m-%d %H:%M:%S')
+
+# --- Agregar fechas al DataFrame ---
+df['Fecha'] = fechas
+
+# --- Filtrar entre 13/04/2025 y 20/04/2025 ---
+inicio = pd.Timestamp('2025-04-13')
+fin = pd.Timestamp('2025-04-20')
+df_filtrado = df[(df['Fecha'] >= inicio) & (df['Fecha'] <= fin)]
+
+# --- Filtrar fechas para graficar ---
+fechas_filtradas = df_filtrado['Fecha']
+
+# --- Función para graficar e imprimir medias ---
+def plot_columnas_temperatura(df, fechas, col_indices):
+    plt.figure(figsize=(12, 6))
+    colores = ['blue', 'green', 'red', 'purple', 'orange', 'brown']
+
+    for idx, col in enumerate(col_indices):
+        nombre_variable = df.columns[col]
+        datos = pd.to_numeric(df.iloc[:, col].str.replace(',', '.'), errors='coerce')
+        color = colores[idx % len(colores)]
+
+        # Calcular la media excluyendo NaNs
+        media = datos.mean()
+        print(f"Media de {nombre_variable}: {media:.2f}")
+
+        # Graficar datos
+        plt.plot(fechas, datos, label=f"{nombre_variable} (media: {media:.2f})", color=color, alpha=0.8)
+        plt.fill_between(fechas, datos, 0, where=(datos >= 0), interpolate=True, color=color, alpha=0.2)
+
+        # Línea horizontal de la media
+        plt.axhline(media, color=color, linestyle='--', linewidth=1, alpha=0.5)
+
+    plt.axhline(0, color='gray', linestyle='--')
+    plt.xlabel('Fecha')
+    plt.grid(True)
+    plt.legend(loc='upper right', fontsize='small')  
+    plt.tight_layout()
+    plt.show()
+
+# --- Ejecutar ---
+cols_to_plot = [1,2]  # Ajusta según corresponda (índice de la columna a graficar)
+plot_columnas_temperatura(df_filtrado, fechas_filtradas, cols_to_plot)

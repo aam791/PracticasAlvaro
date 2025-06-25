@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- Cargar datos ---
+df = pd.read_csv(
+    'datos-abrilmayo25C1.csv',
+    delimiter=';',
+    dtype=str,
+    encoding='latin1',
+    header=0
+)
+
+# --- Convertir fechas ---
+fechas_str = df.iloc[:, 0]
+fechas = pd.to_datetime(fechas_str, format='%d/%m/%Y %H:%M:%S')
+
+# --- Filtrar por rango de fechas ---
+inicio = pd.Timestamp('2025-04-01 00:00:00')
+fin = pd.Timestamp('2025-06-1 23:59:59')
+mascara = (fechas >= inicio) & (fechas <= fin)
+
+# Filtrar DataFrame y fechas
+df_filtrado = df.loc[mascara].reset_index(drop=True)
+fechas_filtradas = fechas[mascara].reset_index(drop=True)
+
+# --- Función para graficar la media con áreas coloreadas ---
+def plot_area_temperatura(df, fechas, col_indices):
+    plt.figure(figsize=(12, 6))
+
+    # Convertir datos seleccionados a numéricos y calcular media por fila
+    datos = df.iloc[:, col_indices].apply(lambda col: pd.to_numeric(col.str.replace(',', '.'), errors='coerce'))
+    medias = datos.mean(axis=1)
+
+
+    # Área sobre cero: rojo claro
+    plt.fill_between(fechas, 0, medias, where=(medias > 0), interpolate=True,
+                     color='lightcoral', alpha=0.7)
+    plt.plot(fechas, medias.where(medias > 0), color="#FF9797", linewidth=1.2)
+
+    # Área bajo cero: azul claro
+    plt.fill_between(fechas, medias, 0, where=(medias < 0), interpolate=True,
+                     color='lightblue', alpha=0.7)
+    plt.plot(fechas, medias.where(medias < 0), color='#ADD8E6', linewidth=1.2)
+
+    # Línea general segmentada por condición
+    plt.plot(fechas, medias.where(medias > 0), color="#FF2600", linewidth=0.8, linestyle='--')
+    plt.plot(fechas, medias.where(medias < 0), color="#0033FF", linewidth=0.8, linestyle='--')
+    plt.axhline(0, color='gray', linestyle='--')
+
+    plt.xlabel('Fecha')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+# --- Ejecutar con las columnas que quieras promediar ---
+cols_to_plot = [37, 38, 39, 40]
+#37, 38, 39, 40
+plot_area_temperatura(df_filtrado, fechas_filtradas, cols_to_plot)

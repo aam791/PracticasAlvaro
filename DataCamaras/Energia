@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- Cargar datos ---
+df = pd.read_csv(
+    'datos-mayojunio25C1.csv',
+    delimiter=';',
+    dtype=str,
+    encoding='latin1',
+    header=0
+)
+
+# --- Convertir fechas ---
+fechas_str = df.iloc[:, 0]
+fechas = pd.to_datetime(fechas_str, format='%d/%m/%Y %H:%M')
+
+# --- Parámetros físicos ---
+C_P = 3700        # calor específico del glicol [J/kg·ºC]
+DENSIDAD = 1.05   # densidad del glicol [kg/L]
+INTERVALO_SEGUNDOS = 60  # cada cuánto hay una muestra (ajusta si es distinto)
+
+# --- Leer y convertir columnas ---
+caudal_lh = pd.to_numeric(df.iloc[:, 50].str.replace(',', '.'), errors='coerce')  # L/h
+t_in = pd.to_numeric(df.iloc[:, 35].str.replace(',', '.'), errors='coerce')       # °C
+t_out = pd.to_numeric(df.iloc[:, 36].str.replace(',', '.'), errors='coerce')      # °C
+
+# --- Conversión de caudal a kg/s ---
+caudal_kg_s = (caudal_lh * DENSIDAD) / 3600  # kg/s
+
+# --- Cálculo de potencia térmica instantánea y energía por muestra ---
+delta_T = t_in - t_out  # ºC
+potencia_W = caudal_kg_s * C_P * delta_T  # en vatios
+energia_Wh = potencia_W * (INTERVALO_SEGUNDOS / 3600)  # energía por muestra en Wh
+
+# --- Energía total (opcional) ---
+energia_total = energia_Wh.sum()
+print(f"Energía total transferida: {energia_total:.2f} Wh")
+
+# --- Gráfico ---
+plt.figure(figsize=(12, 6))
+plt.plot(fechas, energia_Wh, label='Energía instantánea (Wh)', color='blue', alpha=0.8)
+plt.fill_between(fechas, energia_Wh, 0, where=(energia_Wh >= 0), interpolate=True, color='blue', alpha=0.2)
+
+# Marcas de eventos (opcional)
+eventos = [
+    ('2025-05-25 08:30:05', 'orange', 'Fallo'),
+    ('2025-05-27 13:18:24', 'red', 'Sistema Apagado'),
+    ('2025-06-03 08:30:15', 'green', 'Sistema Encendido'),
+    ('2025-06-04 10:17:16', 'orange', ''),
+    ('2025-06-11 10:35:00', 'orange', 'Sistema Apagado')
+]
+for fecha_str, color, etiqueta in eventos:
+    fecha = pd.to_datetime(fecha_str)
+    plt.axvline(x=fecha, color=color, linestyle='--', linewidth=2)
+    if etiqueta:
+        plt.annotate(f'{etiqueta}\n{fecha.strftime("%Y-%m-%d %H:%M")}', 
+                     xy=(fecha, plt.ylim()[1]), 
+                     xytext=(fecha, plt.ylim()[1] + 2),
+                     ha='right', fontsize=8)
+
+# Estética del gráfico
+plt.axhline(0, color='gray', linestyle='--')
+plt.xlabel('Fecha')
+plt.ylabel('Energía por intervalo (Wh)')
+plt.title('Energía térmica transferida por glicol (con caudal en L/h)')
+plt.grid(True)
+plt.legend(loc='upper right', fontsize='small')
+plt.tight_layout()
+plt.show()
