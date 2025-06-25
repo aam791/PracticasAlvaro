@@ -1,9 +1,13 @@
 -Memoria entregada en la web de ICARO.
 
 **SCADA.**
+
 -Diseño virtual del circuito.
+
 -Creación de pop ups para mejor usabilidad.
+
 -Creación y enlace de las nuevas variables.
+
 -Ajuste de  modo tanques para que desde SCADA se pueda cambiar fácilmente el uso de los tanques(izquierda, derecha, serie, paralelo etc…)
 
 
@@ -21,7 +25,9 @@
 
 
 **Informes**
+
 -Informe de fallo: Ver el efecto que tienen errores de la cámara de refrigeración 1 en la temperatura de los depósitos PCM.
+
 -Comparación entre cámara de refrigeración 1 y 2 entre abril y mayo.
 
 
