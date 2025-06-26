@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# --- Cargar datos ---
+df = pd.read_csv(
+    'archivos_unidos_por_fecha.csv',
+    delimiter=';',
+    dtype=str,
+    encoding='latin1',
+    header=0
+)
+
+# --- Convertir fechas ---
+fechas_str = df.iloc[:, 0]
+fechas = pd.to_datetime(fechas_str, format='%Y-%m-%d %H:%M:%S')
+df['Fecha'] = fechas
+
+# --- Filtrar entre 2025-04-13 y 2025-05-22 ---
+inicio = pd.Timestamp('2025-04-13')
+fin = pd.Timestamp('2025-05-22')
+df_filtrado = df[(df['Fecha'] >= inicio) & (df['Fecha'] <= fin)].copy()
+
+# --- Redondear fecha a la hora ---
+df_filtrado['Fecha_Hora'] = df_filtrado['Fecha'].dt.floor('H')
+
+# --- Función para graficar y calcular estadísticas ---
+def plot_columnas_temperatura(df, col_indices):
+    # Convertir columnas seleccionadas a numérico y calcular la media por hora
+    for col in col_indices:
+        col_name = df.columns[col]
+        df[col_name] = pd.to_numeric(df[col_name].str.replace(',', '.'), errors='coerce')
+
+    # Agrupar por hora y calcular promedio
+    columnas_a_usar = [df.columns[col] for col in col_indices]
+    df_grouped = df.groupby('Fecha_Hora')[columnas_a_usar].mean()
+
+    fechas = df_grouped.index
+    plt.figure(figsize=(12, 6))
+    colores = ['blue', 'green', 'red', 'purple', 'orange', 'brown']
+
+    for idx, col in enumerate(columnas_a_usar):
+        datos = df_grouped[col]
+
+        # Estadísticas
+        media = datos.mean()
+        pico = datos.abs().max()
+        suma_positivos = datos[datos > 0].sum()
+        suma_negativos = datos[datos < 0].sum()
+        max_negativo = datos[datos < 0].min()
+        min_absoluto_negativo = datos[datos < 0].max()
+
+        # Mostrar estadísticas
+        print(f'\n--- Estadísticas para {col} ---')
+        print(f'Media: {media:.4f}')
+        print(f'Pico (valor absoluto máximo): {pico:.4f}')
+        print(f'Máximo negativo (más negativo): {max_negativo:.4f}')
+        print(f'Mínimo absoluto negativo (menos negativo): {min_absoluto_negativo:.4f}')
+        print(f'Suma de positivos: {suma_positivos:.4f}')
+        print(f'Suma de negativos: {suma_negativos:.4f}')
+
+        # Graficar
+        color = colores[idx % len(colores)]
+        plt.plot(fechas, datos, label=col, color=color, alpha=0.8)
+        plt.fill_between(fechas, datos, 0, where=(datos >= 0), interpolate=True, color=color, alpha=0.2)
+
+    plt.axhline(0, color='gray', linestyle='--')
+    plt.xlabel('Fecha')
+    plt.ylabel('Valor promedio por hora')
+    plt.title('Promedio horario de variables')
+    plt.grid(True)
+    plt.legend(loc='upper right', fontsize='small')
+    plt.tight_layout()
+    plt.show()
+
+# --- Ejecutar ---
+cols_to_plot = [1, 2]  # Ajusta según las columnas que quieres analizar
+plot_columnas_temperatura(df_filtrado, cols_to_plot)
